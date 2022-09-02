@@ -20,15 +20,18 @@ app.post('/participants', (req, res) => {
     if(validation.error) {
         const error = validation.error.details.map(detail => detail.message);
 
-        res.status(400).send(error);
+        res.status(422).send(error);
         return;
     };
 
-    participants.push({ name });
+    participants.push({ name, lastStatus: Date.now() });
+    console.log(participants);
 
-    res.sendStatus(200);
+    res.sendStatus(201);
 });
 
-
+app.get('/participants', (req, res) => {
+    res.status(200).send(participants);
+})
 
 app.listen(5000);
