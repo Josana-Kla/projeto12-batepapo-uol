@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import { MongoClient } from "mongodb";
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -31,6 +31,23 @@ const messagesSchema = joi.object({
 }); 
 
 
+async function findSameName(name) {
+    try {
+        const userName = await db.collection('participants').findOne({name});
+
+        if(userName === null) {
+            console.log("É um novo usuário! ");
+            return false;
+        } else {
+            console.log("Esse usuário já existe: \n", userName);
+            return true;
+        }
+    } catch(error) {
+        res.sendStatus(500);
+    }
+};
+
+
 app.post('/participants', async (req, res) => {
     const { name } = req.body;
     const validation = participantsSchema.validate(req.body);
@@ -42,9 +59,12 @@ app.post('/participants', async (req, res) => {
         return;
     };
 
+    if(await findSameName(name)) {
+        return res.sendStatus(409);
+    };
+
     try {
         await db.collection('participants').insertOne({ name, lastStatus: Date.now() });
-
         res.sendStatus(201);
     } catch(error) {
         res.sendStatus(500);
@@ -86,6 +106,12 @@ app.post('/messages', async (req, res) => {
         res.sendStatus(500);
     };
 
+});
+
+app.get('/messages', async (req, res) => {
+    const response = await db.collection('messages').find().toArray();
+    
+    res.send(response);
 });
 
 app.listen(5000);
