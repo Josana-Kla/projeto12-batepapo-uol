@@ -122,4 +122,26 @@ app.get('/messages', async (req, res) => {
     res.send(response);
 });
 
+app.post('/status', async (req, res) => {
+    const { user } = req.headers;
+    const validUser = await findSameName(user);
+
+    if(!validUser) {
+        res.sendStatus(404);
+        return;
+    };
+
+    try {
+        const modificado = await db.collection('participants')
+        .insertOne({
+            name: user, lastStatus: Date.now()
+        });
+        res.sendStatus(200);
+    } catch(error) {
+        res.sendStatus(500);
+        return;
+    };
+
+});
+
 app.listen(5000);
