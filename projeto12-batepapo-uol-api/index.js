@@ -27,7 +27,7 @@ const participantsSchema = joi.object({
 const messagesSchema = joi.object({
     to: joi.string().alphanum().required().empty(''),
     text: joi.string().required().empty(''),
-    type: joi.string().required().empty('').valid('message', 'private_messsage')
+    type: joi.string().required().empty('').valid('message', 'private_message')
 }); 
 
 
@@ -39,12 +39,12 @@ async function findSameName(name) {
             console.log("É um novo usuário! ");
             return false;
         } else {
-            console.log("Esse usuário já existe: \n", userName);
+            console.log("O usuário já existe no banco 😃: \n", userName);
             return true;
         }
     } catch(error) {
         res.sendStatus(500);
-    }
+    };
 };
 
 
@@ -60,7 +60,8 @@ app.post('/participants', async (req, res) => {
     };
 
     if(await findSameName(name)) {
-        return res.sendStatus(409);
+        res.sendStatus(409);
+        return;
     };
 
     try {
@@ -83,6 +84,8 @@ app.get('/participants', (req, res) => {
 
 app.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
+    const { user } = req.headers;
+    const validUser = await findSameName(user);
     const validation = messagesSchema.validate(req.body, {abortEarly: false});
 
     if(validation.error) {
@@ -92,9 +95,14 @@ app.post('/messages', async (req, res) => {
         return;
     };
 
+    if(!validUser) {
+        res.sendStatus(422);
+        return;
+    };
+
     try {
         await db.collection('messages').insertOne({
-            from: 'Jojo',
+            from: user,
             to,
             text,
             type,
