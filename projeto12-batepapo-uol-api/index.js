@@ -165,10 +165,11 @@ app.post('/status', async (req, res) => {
     };
 
     try {
-        const modificado = await db.collection('participants')
+        await db.collection('participants')
         .insertOne({
             name: user, lastStatus: Date.now()
         });
+
         res.sendStatus(200);
     } catch(error) {
         res.sendStatus(500);
@@ -186,8 +187,22 @@ setInterval(async () => {
         participantsList.forEach(async element => {
             if((currentDate - element.lastStatus) > 10000) {
                 try {
-                    await db.collection('participants').remove(element);
-                    console.log("removido com sucesso!")
+                    try {
+                        console.log(element.name);
+                        const mensagem = await db.collection('messages').insertOne({
+                            from: element.name, 
+                            to: 'Todos', 
+                            text: 'sai da sala...', 
+                            type: 'status', 
+                            time: currentDate()
+                        });
+                        console.log("mensagem enviada com sucesso!");
+                        console.log(mensagem);
+                    } catch (error) {
+                        console.log("Erro ao enviar mensagem de sair da sala");
+                    };
+                    await db.collection('participants').deleteOne(element);
+                    console.log("removido com sucesso!");
                 } catch (error) {
                     console.log("Erro no servidor ao remover um participante");
                 }
