@@ -18,8 +18,6 @@ mongoClient.connect().then(() => {
     db = mongoClient.db('buzzquizz')
 });
 
-const currentDate = dayjs(new Date()).format('HH:mm:ss');
-
 const participantsSchema = joi.object({
     name: joi.string().alphanum().required().empty('')
 }); 
@@ -30,6 +28,10 @@ const messagesSchema = joi.object({
     type: joi.string().required().empty('').valid('message', 'private_message')
 }); 
 
+
+function currentDate() {
+    return dayjs(new Date()).format('HH:mm:ss');
+};
 
 async function findSameName(name) {
     try {
@@ -66,6 +68,13 @@ app.post('/participants', async (req, res) => {
 
     try {
         await db.collection('participants').insertOne({ name, lastStatus: Date.now() });
+        await db.collection('messages').insertOne({
+            from: name,
+            to: 'Todos', 
+            text: 'entra na sala...', 
+            type: 'status', 
+            time: currentDate()
+        });
         res.sendStatus(201);
     } catch(error) {
         res.sendStatus(500);
@@ -82,7 +91,7 @@ app.get('/participants', (req, res) => {
     });
 });
 
-//TODO: Não pode mandar o tipo: private_message para "Todos", não faz sentido, tem que ser só "message".
+//TODO: Não pode mandar o tipo: private_message para "Todos", não faz sentido, tem que ser só "message". E o mesmo para o get messages. O nome que vem do headers deveria ser obrigatório se não eu posto mensagem como usuário null.
 app.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
     const { user } = req.headers;
@@ -107,7 +116,7 @@ app.post('/messages', async (req, res) => {
             to,
             text,
             type,
-            time: currentDate
+            time: currentDate()
         });
     
         res.sendStatus(201);
@@ -117,6 +126,7 @@ app.post('/messages', async (req, res) => {
 
 });
 
+//TODO: verificar se o limitMessages é um Num
 app.get('/messages', async (req, res) => {
     const limitMessages = req.query['limit'];
     const { user } = req.headers;
