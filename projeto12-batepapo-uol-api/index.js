@@ -43,7 +43,7 @@ async function findSameName(name) {
             return true;
         }
     } catch(error) {
-        res.sendStatus(500);
+        console.log("Deu erro!");
     };
 };
 
@@ -82,6 +82,7 @@ app.get('/participants', (req, res) => {
     });
 });
 
+//TODO: Não pode mandar o tipo: private_message para "Todos", não faz sentido, tem que ser só "message".
 app.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
     const { user } = req.headers;
@@ -117,9 +118,31 @@ app.post('/messages', async (req, res) => {
 });
 
 app.get('/messages', async (req, res) => {
-    const response = await db.collection('messages').find().toArray();
-    
-    res.send(response);
+    const limitMessages = req.query['limit'];
+    const { user } = req.headers;
+    const validUser = await findSameName(user);
+
+    if(!validUser) {
+        res.sendStatus(409);
+        return;
+    };
+
+    try {
+        const messageList = await db.collection('messages').find().toArray();
+        const messageFilter = messageList.filter(msg => msg.to === "Todos" || msg.to === user || msg.from === user);
+
+        if(limitMessages) {
+            res.send(messageFilter.slice(-limitMessages));
+            return;
+        } else {
+            res.send(messageFilter);
+            return;
+        };
+    } catch (error) {
+        res.sendStatus(500);
+        return;
+    };
+
 });
 
 app.post('/status', async (req, res) => {
@@ -143,5 +166,6 @@ app.post('/status', async (req, res) => {
     };
 
 });
+
 
 app.listen(5000);
