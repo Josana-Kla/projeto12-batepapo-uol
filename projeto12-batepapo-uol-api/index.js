@@ -38,7 +38,7 @@ async function findSameName(name) {
         const userName = await db.collection('participants').findOne({name});
 
         if(userName === null) {
-            console.log("É um novo usuário! ");
+            console.log("Se você não for um novo usuário, manda seu nome aí! 😄");
             return false;
         } else {
             console.log("O usuário já existe no banco 😃: \n", userName);
@@ -176,6 +176,30 @@ app.post('/status', async (req, res) => {
     };
 
 });
+
+setInterval(async () => {
+    const currentDate = Date.now();
+
+    try {
+        const participantsList = await db.collection('participants').find().toArray();
+        
+        participantsList.forEach(async element => {
+            if((currentDate - element.lastStatus) > 10000) {
+                try {
+                    await db.collection('participants').remove(element);
+                    console.log("removido com sucesso!")
+                } catch (error) {
+                    console.log("Erro no servidor ao remover um participante");
+                }
+            } else {
+                return false;
+            }
+        });
+    } catch (error) {
+        console.log("Erro no servidor ao encontrar um participante");
+    };
+
+}, 15000);
 
 
 app.listen(5000);
